@@ -5,7 +5,6 @@
   <title>萤火虫信息素数据库</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
-    /* 所有样式保持不变，只修改JavaScript部分 */
     body { 
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
       background: #f5f7fa; 
@@ -98,10 +97,20 @@
     .nuclear-21-30 { color: #ff8000; font-weight: bold; } /* 30次后 - 橙色 */
     .nuclear-31-plus { color: #ff0000; font-weight: bold; } /* 50次后 - 红色 */
     
-    /* 称号颜色样式 */
-    .title-cell {
-      color: #AF5E04;
+    /* 称号颜色样式 - 修复版 */
+    .title-cell, 
+    .fpdb-table td.title-cell,
+    td.title-cell {
+      color: #AF5E04 !important;
       font-weight: 500;
+    }
+    
+    /* 确保称号文本在所有状态下都保持指定颜色 */
+    .title-cell *,
+    .title-scroll-text,
+    .title-scroll-container,
+    .title-scroll-container span {
+      color: #AF5E04 !important;
     }
     
     /* 称号滚动容器 */
@@ -116,6 +125,7 @@
       white-space: nowrap;
       padding-left: 100%;
       animation: scroll-text 15s linear infinite;
+      color: #AF5E04 !important;
     }
     
     @keyframes scroll-text {
@@ -194,6 +204,7 @@
       .title-cell {
         overflow: hidden;
         position: relative;
+        color: #AF5E04 !important;
       }
       .title-scroll-container {
         width: 100%;
