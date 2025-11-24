@@ -17,6 +17,7 @@
       color: #fff; 
       padding: 1rem 1.5rem; 
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      position: relative;
     }
     header h1 { 
       margin: 0; 
@@ -235,15 +236,24 @@
         const response = await fetch('./TheSecurityBetaVersionBeforeTheOfficialVersionIsUploaded.js');
         if (response.ok) {
           const content = await response.text();
+          const trimmedContent = content.trim();
+          
+          console.log("检测到版本文件内容:", trimmedContent);
           
           // 检查文件内容
-          if (content.includes("It Ls A Test Version Of The Security Version Environment Before The Official Version Is Uploaded")) {
+          if (trimmedContent === "It Ls A Test Version Of The Security Version Environment Before The Official Version Is Uploaded") {
             apiUrl = "https://dongshengamestudio.github.io/FireflyPheromoneDatabaseBetaAPI/FireflyPheromoneDatabaseBetaAPI.js";
             versionType = "测试版";
-          } else if (content.includes("InformalVersionPre-uploadBetaSecureVersionEnvironment")) {
+            console.log("切换到测试版API:", apiUrl);
+          } else if (trimmedContent === "InformalVersionPre-uploadBetaSecureVersionEnvironment") {
             // 使用默认的正式版URL
             versionType = "正式版";
+            console.log("使用正式版API:", apiUrl);
+          } else {
+            console.log("版本文件内容不匹配，使用默认正式版");
           }
+        } else {
+          console.log("版本文件不存在或无法访问，使用默认正式版");
         }
       } catch (error) {
         console.log('无法加载版本检测文件，使用默认正式版:', error);
@@ -285,7 +295,7 @@
       titleCells.forEach(cell => {
         const titleText = cell.textContent.trim();
         // 如果称号文本超过15个字符，添加滚动效果
-        if (titleText.length > 15 && titleText !== " ") {
+        if (titleText.length > 15 && titleText !== " " && titleText !== "") {
           cell.innerHTML = `<div class="title-scroll-container"><span class="title-scroll-text">${titleText}</span></div>`;
         }
       });
