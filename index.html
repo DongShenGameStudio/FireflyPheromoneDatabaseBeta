@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>萤火虫信息素数据库</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
+      background: #f5f7fa; 
+      color: #333; 
+      margin: 0; 
+      padding: 0; 
+    }
+    header { 
+      background: #0d47a1; 
+      color: #fff; 
+      padding: 1rem 1.5rem; 
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    header h1 { 
+      margin: 0; 
+      font-size: 1.4rem; 
+    }
+    main { 
+      max-width: 1200px; 
+      margin: 1.5rem auto; 
+      padding: 0 1rem; 
+    }
+    .search-box { 
+      display: flex; 
+      gap: .5rem; 
+      margin-bottom: 1rem; 
+    }
+    .search-box input { 
+      flex: 1; 
+      padding: .6rem .8rem; 
+      border: 1px solid #cfd8dc; 
+      border-radius: 4px; 
+      font-size: 1rem; 
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    .search-box button { 
+      padding: .6rem 1.2rem; 
+      border: none; 
+      background: #0d47a1; 
+      color: #fff; 
+      border-radius: 4px; 
+      cursor: pointer; 
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+    .search-box button:hover { 
+      background: #094293; 
+    }
+    .fpdb-table { 
+      width: 100%; 
+      border-collapse: collapse; 
+      background: #fff; 
+      box-shadow: 0 1px 3px rgba(0,0,0,.1); 
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    th, td { 
+      padding: .75rem 1rem; 
+      text-align: left; 
+      border-bottom: 1px solid #e0e0e0; 
+    }
+    th { 
+      background: #e3f2fd; 
+      font-weight: 600; 
+    }
+    tr:hover {
+      background-color: #f8fdff;
+    }
+    .no-data { 
+      text-align: center; 
+      padding: 2rem; 
+      color: #90a4ae; 
+      background: #fff;
+      border-radius: 4px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.1);
+    }
+    /* 数值颜色样式 */
+    .value-over-100b { color: #ff0000; font-weight: bold; } /* 超过千亿 - 红色 */
+    .value-over-100m { color: #ff8000; font-weight: bold; } /* 超过1亿 - 橙色 */
+    .value-over-10m { color: #ffff00; font-weight: bold; } /* 超过千万 - 亮黄色 */
+    .value-over-1m { color: #00ccff; font-weight: bold; } /* 超过百万 - 淡蓝色 */
+    .value-over-10k { color: #8000ff; font-weight: bold; } /* 超过1万 - 紫色 */
+    .value-over-1k { color: #aaff00; font-weight: bold; } /* 超过千 - 黄绿色 */
+    .value-below-1k { color: #aaaaaa; } /* 千以下 - 灰色 */
+    
+    /* 核聚变打击次数颜色样式 */
+    .nuclear-0-10 { color: #aaaaaa; } /* 10次以下 - 灰色 */
+    .nuclear-11-20 { color: #ffff00; font-weight: bold; } /* 20次后 - 黄色 */
+    .nuclear-21-30 { color: #ff8000; font-weight: bold; } /* 30次后 - 橙色 */
+    .nuclear-31-plus { color: #ff0000; font-weight: bold; } /* 50次后 - 红色 */
+    
+    /* 称号颜色样式 */
+    .title-cell {
+      color: #AF5E04;
+      font-weight: 500;
+    }
+    
+    /* 称号滚动容器 */
+    .title-scroll-container {
+      position: relative;
+      overflow: hidden;
+      width: 100%;
+    }
+    
+    .title-scroll-text {
+      display: inline-block;
+      white-space: nowrap;
+      padding-left: 100%;
+      animation: scroll-text 15s linear infinite;
+    }
+    
+    @keyframes scroll-text {
+      0% {
+        transform: translateX(0);
+      }
+      100% {
+        transform: translateX(-100%);
+      }
+    }
+    
+    /* 版本指示器 */
+    .version-indicator {
+      position: absolute;
+      top: 0.5rem;
+      right: 1rem;
+      background: rgba(255, 255, 255, 0.2);
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+    
+    /* 移动端优化样式 - 完全重写 */
+    @media (max-width: 600px) { 
+      table, thead, tbody, th, td, tr { 
+        display: block; 
+      } 
+      thead tr { 
+        display: none; 
+      } 
+      tr { 
+        margin-bottom: 1rem; 
+        border: 1px solid #cfd8dc; 
+        border-radius: 4px; 
+        padding: 0.75rem;
+        background: #fff;
+        box-shadow: 0 1px 3px rgba(0,0,0,.1);
+        position: relative;
+        overflow: hidden;
+      } 
+      td { 
+        border: none; 
+        position: relative; 
+        padding: 0.75rem 0.5rem; 
+        min-height: auto;
+        display: flex;
+        flex-direction: column;
+        border-bottom: 1px solid #f0f0f0;
+        word-break: break-word;
+        overflow-wrap: break-word;
+      } 
+      td:last-child {
+        border-bottom: none;
+      }
+      td::before { 
+        content: attr(data-label); 
+        font-weight: 600; 
+        color: #0d47a1; 
+        margin-bottom: 0.25rem;
+        font-size: 0.9rem;
+        background: #f0f8ff;
+        padding: 0.25rem 0.5rem;
+        border-radius: 3px;
+        display: inline-block;
+        width: 100%;
+        box-sizing: border-box;
+      } 
+      /* 确保内容区域不会溢出 */
+      td > * {
+        max-width: 100%;
+        word-break: break-word;
+        overflow-wrap: break-word;
+      }
+      /* 移动端称号样式 */
+      .title-cell {
+        overflow: hidden;
+        position: relative;
+      }
+      .title-scroll-container {
+        width: 100%;
+      }
+      /* 移动端版本指示器 */
+      .version-indicator {
+        position: relative;
+        top: auto;
+        right: auto;
+        display: block;
+        text-align: center;
+        margin-top: 0.5rem;
+        background: rgba(13, 71, 161, 0.1);
+        color: #0d47a1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>萤火虫信息素数据库</h1>
+    <div id="versionIndicator" class="version-indicator">正在检测版本...</div>
+  </header>
+  <main>
+    <div class="search-box">
+      <input id="searchInput" type="text" placeholder="输入玩家名称或数字名称" />
+      <button onclick="handleSearch()">搜索</button>
+    </div>
+    <div id="resultContainer"></div>
+  </main>
+
+  <script>
+    // 版本检测和API加载函数
+    async function loadAPIVersion() {
+      const versionIndicator = document.getElementById('versionIndicator');
+      let apiUrl = "https://dongshengamestudio.github.io/FireflyPheromoneDatabaseAPI/FireflyPheromoneDatabaseAPI.js";
+      let versionType = "正式版";
+      
+      try {
+        // 尝试加载本地版本检测文件
+        const response = await fetch('./TheSecurityBetaVersionBeforeTheOfficialVersionIsUploaded.js');
+        if (response.ok) {
+          const content = await response.text();
+          
+          // 检查文件内容
+          if (content.includes("It Ls A Test Version Of The Security Version Environment Before The Official Version Is Uploaded")) {
+            apiUrl = "https://dongshengamestudio.github.io/FireflyPheromoneDatabaseBetaAPI/FireflyPheromoneDatabaseBetaAPI.js";
+            versionType = "测试版";
+          } else if (content.includes("InformalVersionPre-uploadBetaSecureVersionEnvironment")) {
+            // 使用默认的正式版URL
+            versionType = "正式版";
+          }
+        }
+      } catch (error) {
+        console.log('无法加载版本检测文件，使用默认正式版:', error);
+        versionType = "正式版 (默认)";
+      }
+      
+      // 更新版本指示器
+      versionIndicator.textContent = versionType;
+      
+      // 动态加载API
+      return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = apiUrl;
+        script.onload = () => {
+          console.log(`成功加载 ${versionType} API: ${apiUrl}`);
+          resolve();
+        };
+        script.onerror = () => {
+          console.error(`加载 ${versionType} API 失败: ${apiUrl}`);
+          reject(new Error(`无法加载 ${versionType} API`));
+        };
+        document.head.appendChild(script);
+      });
+    }
+    
+    // 搜索处理函数
+    async function handleSearch() {
+      const keyword = document.getElementById('searchInput').value.trim();
+      const list = FPDB.searchPlayer(keyword);
+      document.getElementById('resultContainer').innerHTML = FPDB.renderTable(list);
+      
+      // 为所有称号单元格添加滚动效果
+      addTitleScrollEffect();
+    }
+    
+    // 为称号添加滚动效果
+    function addTitleScrollEffect() {
+      const titleCells = document.querySelectorAll('.title-cell');
+      titleCells.forEach(cell => {
+        const titleText = cell.textContent.trim();
+        // 如果称号文本超过15个字符，添加滚动效果
+        if (titleText.length > 15 && titleText !== " ") {
+          cell.innerHTML = `<div class="title-scroll-container"><span class="title-scroll-text">${titleText}</span></div>`;
+        }
+      });
+    }
+    
+    // 初始化函数
+    async function initializeApp() {
+      try {
+        // 加载API版本
+        await loadAPIVersion();
+        
+        // 等待API数据加载
+        await FPDB.loadData();
+        
+        // 初始展示全部数据
+        handleSearch();
+        
+        console.log('萤火虫信息素数据库初始化完成');
+      } catch (error) {
+        console.error('初始化失败:', error);
+        document.getElementById('resultContainer').innerHTML = 
+          '<p class="no-data">系统初始化失败，请刷新页面重试</p>';
+      }
+    }
+    
+    // 启动应用
+    initializeApp();
+  </script>
+</body>
+</html>
