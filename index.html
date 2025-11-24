@@ -91,6 +91,12 @@
     .value-over-1k { color: #aaff00; font-weight: bold; } /* 超过千 - 黄绿色 */
     .value-below-1k { color: #aaaaaa; } /* 千以下 - 灰色 */
     
+    /* 非数字身价资产样式 */
+    .value-non-numeric {
+      color: #8B0000 !important; /* 深红色 */
+      font-weight: bold;
+    }
+    
     /* 核聚变打击次数颜色样式 */
     .nuclear-0-10 { color: #aaaaaa; } /* 10次以下 - 灰色 */
     .nuclear-11-20 { color: #ffff00; font-weight: bold; } /* 20次后 - 黄色 */
@@ -290,6 +296,10 @@
         script.src = apiUrl + '?t=' + new Date().getTime(); // 添加时间戳避免缓存
         script.onload = () => {
           console.log(`成功加载 ${versionType} API: ${apiUrl}`);
+          
+          // 重写渲染函数，确保身价资产样式正确应用
+          overrideRenderTable();
+          
           resolve();
         };
         script.onerror = () => {
@@ -298,6 +308,93 @@
         };
         document.head.appendChild(script);
       });
+    }
+    
+    // 重写渲染表格函数
+    function overrideRenderTable() {
+      if (typeof FPDB !== 'undefined' && FPDB.renderTable) {
+        // 保存原始函数
+        const originalRenderTable = FPDB.renderTable;
+        
+        // 重写函数
+        FPDB.renderTable = function(list) {
+          if (!list.length) return '<p class="no-data">暂无数据</p>';
+          
+          // 获取身价资产颜色类
+          function getValueColorClass(value) {
+            // 如果不是数字，返回非数字样式
+            if (typeof value !== 'number') return 'value-non-numeric';
+            
+            if (value > 100000000000) return 'value-over-100b'; // 超过千亿
+            if (value > 100000000) return 'value-over-100m'; // 超过1亿
+            if (value > 10000000) return 'value-over-10m'; // 超过千万
+            if (value > 1000000) return 'value-over-1m'; // 超过百万
+            if (value > 10000) return 'value-over-10k'; // 超过1万
+            if (value > 1000) return 'value-over-1k'; // 超过千
+            return 'value-below-1k'; // 千以下
+          }
+          
+          // 获取核聚变打击次数颜色类
+          function getNuclearColorClass(count) {
+            if (count <= 10) return 'nuclear-0-10';
+            if (count <= 20) return 'nuclear-11-20';
+            if (count <= 30) return 'nuclear-21-30';
+            return 'nuclear-31-plus';
+          }
+          
+          let html = `<table class="fpdb-table"><thead>
+            <tr>
+              <th>数字名称</th>
+              <th>玩家名称</th>
+              <th>称号</th>
+              <th>段位</th>
+              <th>等级</th>
+              <th>身价资产</th>
+              <th>与萤火虫战斗率</th>
+              <th>与人机战斗率</th>
+              <th>核聚变打击次数</th>
+              <th>注册赛季</th>
+              <th>电竞成员</th>
+              <th>是否被系统检测到实名状态</th>
+              <th>是否被系统检测到同一个实名人</th>
+              <th>实名人姓名</th>
+            </tr>
+          </thead><tbody>`;
+          
+          list.forEach(p => {
+            const valueClass = getValueColorClass(p.value);
+            const nuclearClass = getNuclearColorClass(p.nuclearStrikeCount);
+            
+            // 处理身价资产显示 - 非数字内容添加⚠️图标
+            let valueDisplay = typeof p.value === 'number' ? p.value.toLocaleString() : p.value;
+            if (typeof p.value !== 'number') {
+              valueDisplay += ' ⚠️';
+            }
+            
+            html += `<tr>
+              <td data-label="数字名称">${p.id}</td>
+              <td data-label="玩家名称">${p.name}</td>
+              <td data-label="称号" class="title-cell">${p.title}</td>
+              <td data-label="段位">${p.tier}</td>
+              <td data-label="等级">${p.level}</td>
+              <td data-label="身价资产" class="${valueClass}">${valueDisplay}</td>
+              <td data-label="与萤火虫战斗率">${p.pvpRate}${typeof p.pvpRate === 'number' || !isNaN(p.pvpRate) ? '%' : ''}</td>
+              <td data-label="与人机战斗率">${p.pveRate}${typeof p.pveRate === 'number' || !isNaN(p.pveRate) ? '%' : ''}</td>
+              <td data-label="核聚变打击次数" class="${nuclearClass}">${p.nuclearStrikeCount}</td>
+              <td data-label="注册赛季">${p.registeredSeason}</td>
+              <td data-label="电竞成员">${p.isEsports ? '是' : '否'}</td>
+              <td data-label="是否被系统检测到实名状态">${p.realNameStatus}</td>
+              <td data-label="是否被系统检测到同一个实名人">${p.sameRealName}</td>
+              <td data-label="实名人姓名">${p.realNameDesensitized}</td>
+            </tr>`;
+          });
+          
+          html += '</tbody></table>';
+          return html;
+        };
+        
+        console.log('已重写渲染表格函数');
+      }
     }
     
     // 搜索处理函数
