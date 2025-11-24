@@ -233,24 +233,22 @@
       
       try {
         // 尝试加载本地版本检测文件
-        const response = await fetch('./TheSecurityBetaVersionBeforeTheOfficialVersionIsUploaded.js');
+        const response = await fetch('./TheSecurityBetaVersionBeforeTheOfficialVersionIsUploaded.js?t=' + new Date().getTime());
         if (response.ok) {
           const content = await response.text();
           const trimmedContent = content.trim();
           
           console.log("检测到版本文件内容:", trimmedContent);
           
-          // 检查文件内容
+          // 检查文件内容 - 使用精确匹配
           if (trimmedContent === "It Ls A Test Version Of The Security Version Environment Before The Official Version Is Uploaded") {
             apiUrl = "https://dongshengamestudio.github.io/FireflyPheromoneDatabaseBetaAPI/FireflyPheromoneDatabaseBetaAPI.js";
             versionType = "测试版";
             console.log("切换到测试版API:", apiUrl);
-          } else if (trimmedContent === "InformalVersionPre-uploadBetaSecureVersionEnvironment") {
-            // 使用默认的正式版URL
+          } else {
+            // 默认使用正式版
             versionType = "正式版";
             console.log("使用正式版API:", apiUrl);
-          } else {
-            console.log("版本文件内容不匹配，使用默认正式版");
           }
         } else {
           console.log("版本文件不存在或无法访问，使用默认正式版");
@@ -265,8 +263,14 @@
       
       // 动态加载API
       return new Promise((resolve, reject) => {
+        // 先移除可能已存在的脚本
+        const existingScript = document.querySelector('script[src*="FireflyPheromoneDatabase"]');
+        if (existingScript) {
+          existingScript.remove();
+        }
+        
         const script = document.createElement('script');
-        script.src = apiUrl;
+        script.src = apiUrl + '?t=' + new Date().getTime(); // 添加时间戳避免缓存
         script.onload = () => {
           console.log(`成功加载 ${versionType} API: ${apiUrl}`);
           resolve();
@@ -282,11 +286,16 @@
     // 搜索处理函数
     async function handleSearch() {
       const keyword = document.getElementById('searchInput').value.trim();
-      const list = FPDB.searchPlayer(keyword);
-      document.getElementById('resultContainer').innerHTML = FPDB.renderTable(list);
-      
-      // 为所有称号单元格添加滚动效果
-      addTitleScrollEffect();
+      if (typeof FPDB !== 'undefined' && FPDB.searchPlayer) {
+        const list = FPDB.searchPlayer(keyword);
+        document.getElementById('resultContainer').innerHTML = FPDB.renderTable(list);
+        
+        // 为所有称号单元格添加滚动效果
+        addTitleScrollEffect();
+      } else {
+        document.getElementById('resultContainer').innerHTML = 
+          '<p class="no-data">API未正确加载，请刷新页面重试</p>';
+      }
     }
     
     // 为称号添加滚动效果
@@ -308,12 +317,16 @@
         await loadAPIVersion();
         
         // 等待API数据加载
-        await FPDB.loadData();
-        
-        // 初始展示全部数据
-        handleSearch();
-        
-        console.log('萤火虫信息素数据库初始化完成');
+        if (typeof FPDB !== 'undefined' && FPDB.loadData) {
+          await FPDB.loadData();
+          
+          // 初始展示全部数据
+          handleSearch();
+          
+          console.log('萤火虫信息素数据库初始化完成');
+        } else {
+          throw new Error('FPDB对象未正确初始化');
+        }
       } catch (error) {
         console.error('初始化失败:', error);
         document.getElementById('resultContainer').innerHTML = 
